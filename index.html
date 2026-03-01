@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>BALTASIA</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#050505;
+      --text: rgba(215,215,215,.62);
+      --glow: rgba(211,0,0,.28);
+
+ 
+  --bgMarkOpacity: 0.035;  /* lower = less visible */
+  --bgMarkSize: 430%;      /* bigger = more zoom so edges hit left/right */
+  --bgMarkBlur: 1.4px;
+  --bgMarkX: 50%;          /* centered */
+  --bgMarkY: 50%;          /* centered */
+}
+    
+   body::before{
+  inset:-6%;               /* less spill; helps “touch” feel */
+} 
+    
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background: var(--bg);
+      color: var(--text);
+      overflow:hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    /* BIG subtle outline in background (zoomed in) */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:-12%;
+      background-image: url("baltasia_final_logo-06.png"); /* <- put file next to index.html */
+      background-repeat: no-repeat;
+      background-position: var(--bgMarkX) var(--bgMarkY);
+      background-size: var(--bgMarkSize);
+      opacity: var(--bgMarkOpacity);
+      filter:
+        blur(var(--bgMarkBlur))
+        contrast(1.05)
+        brightness(1.05);
+      transform: translateZ(0);
+      pointer-events:none;
+    }
+
+    /* soft vignette on top */
+    .vignette{
+      position:fixed; inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(1200px 700px at 50% 38%, rgba(255,255,255,.035), rgba(0,0,0,0) 55%),
+        radial-gradient(900px 520px at 50% 55%, rgba(211,0,0,.06), rgba(0,0,0,0) 60%),
+        radial-gradient(1200px 900px at 50% 50%, rgba(0,0,0,0) 35%, rgba(0,0,0,.82) 80%);
+    }
+
+    main{
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding: clamp(18px, 3vw, 48px);
+      position:relative;
+      z-index:1; /* above the bg mark */
+    }
+
+    .hero{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap: clamp(14px, 2.2vh, 22px);
+      transform: translateZ(0);
+    }
+
+    .emblemWrap{
+      width: min(480px, 58vw);
+      aspect-ratio: 1 / 1;
+      display:grid;
+      place-items:center;
+      perspective: 900px;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .emblem{
+      width: 100%;
+      height: auto;
+      display:block;
+      user-select:none;
+      -webkit-user-drag: none;
+      filter:
+        drop-shadow(0 18px 44px rgba(0,0,0,.75))
+        drop-shadow(0 0 26px var(--glow));
+      transform:
+        translateZ(40px)
+        rotateX(var(--rx, 0deg))
+        rotateY(var(--ry, 0deg));
+      will-change: transform;
+      animation: float 4.2s ease-in-out infinite;
+    }
+
+    @keyframes float{
+      0%,100% { transform: translateZ(40px) translateY(0px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+      50%     { transform: translateZ(40px) translateY(-12px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+    }
+
+    h1{
+      margin:0;
+      font-family: "Cinzel", serif;
+      font-weight: 500;
+      letter-spacing: .55em;
+      text-indent: .55em;
+      font-size: clamp(20px, 3.2vw, 44px);
+      color: var(--text);
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .emblem{ animation:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <main>
+    <section class="hero" aria-label="BALTASIA hero">
+      <!-- Put BOTH images next to this index.html:
+           - baltasia_final_logo-05.png (floating emblem)
+           - baltasia_final_logo-06.png (background outline) -->
+      <div class="emblemWrap" id="tiltZone">
+        <img class="emblem" src="baltasia_final_logo-05.png" alt="BALTASIA emblem" />
+      </div>
+      <h1>BALTASIA</h1>
+    </section>
+  </main>
+
+  <script>
+    const zone = document.getElementById("tiltZone");
+    const root = document.documentElement;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (!reduce) {
+      let targetX = 0, targetY = 0;
+      let curX = 0, curY = 0;
+
+      function onMove(e){
+        const r = zone.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;
+        const y = (e.clientY - r.top) / r.height - 0.5;
+
+        targetY = x * 14;   // deg
+        targetX = -y * 12;  // deg
+      }
+
+      function tick(){
+        curX += (targetX - curX) * 0.08;
+        curY += (targetY - curY) * 0.08;
+
+        root.style.setProperty("--rx", curX.toFixed(2) + "deg");
+        root.style.setProperty("--ry", curY.toFixed(2) + "deg");
+
+        requestAnimationFrame(tick);
+      }
+
+      zone.addEventListener("pointermove", onMove, { passive:true });
+      zone.addEventListener("pointerleave", () => { targetX = 0; targetY = 0; }, { passive:true });
+
+      tick();
+    }
+  </script>
+</body>
+</html>
